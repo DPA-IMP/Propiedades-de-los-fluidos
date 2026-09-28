@@ -1,0 +1,1055 @@
+<!doctype html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>De pozo a tanque · Simulador PVT offshore</title>
+  <meta name="description"
+    content="Simulador didáctico de propiedades PVT desde el yacimiento offshore hasta el tanque.">
+  <style>
+    body {
+      margin: 0;
+      background: #eaf0ec;
+      padding: 20px;
+      font-family: Arial, sans-serif
+    }
+
+    #imp-simulator {
+      max-width: 1280px;
+      margin: auto
+    }
+
+    @media(max-width:600px) {
+      body {
+        padding: 0
+      }
+    }
+  </style>
+  <link rel="icon"
+    href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 32 32%27%3E%3Crect width=%2732%27 height=%2732%27 rx=%277%27 fill=%27%23004A44%27/%3E%3Cpath d=%27M16 5C11 13 7 17 7 22a9 9 0 0018 0c0-5-4-9-9-17%27 fill=%27%23B99056%27/%3E%3C/svg%3E">
+</head>
+
+<body>
+  <div id="imp-simulator">
+    <style>
+      #imp-simulator {
+        container-type: inline-size;
+        --imp: #004A44;
+        --wine: #820000;
+        --gold: #B99056;
+        --line: #d5ded9;
+        --soft: #edf3ef;
+        color: #243c36;
+        background: #fafbf8;
+        font: 14px/1.45 Arial, sans-serif;
+        border-radius: 12px;
+        overflow: hidden;
+        color-scheme: light
+      }
+
+      #imp-simulator * {
+        box-sizing: border-box
+      }
+
+      #imp-simulator header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 12px;
+        padding: 20px 24px;
+        border-top: 6px solid var(--imp);
+        background: white;
+        border-bottom: 1px solid var(--line)
+      }
+
+      #imp-simulator h2 {
+        font-size: 26px;
+        letter-spacing: -.6px;
+        margin: 2px 0;
+        color: var(--imp)
+      }
+
+      #imp-simulator .eyebrow {
+        font-size: 12px;
+        letter-spacing: 1.4px;
+        color: var(--imp)
+      }
+
+      #imp-simulator .status {
+        padding: 6px 10px;
+        background: #f5ede1;
+        color: #77562c;
+        border-radius: 5px;
+        font-size: 12px
+      }
+
+      #imp-simulator .controls {
+        display: grid;
+        grid-template-columns: 1.15fr 1fr 1fr 1fr .9fr;
+        gap: 12px;
+        padding: 18px 22px;
+        background: #f0f4f1
+      }
+
+      #imp-simulator fieldset {
+        min-width: 0;
+        margin: 0;
+        border: 0;
+        padding: 0
+      }
+
+      #imp-simulator legend {
+        font-weight: bold;
+        color: var(--imp);
+        margin-bottom: 8px;
+        font-size: 13px
+      }
+
+      #imp-simulator label {
+        display: block;
+        font-size: 12px;
+        color: #52675f
+      }
+
+      #imp-simulator .pair {
+        display: grid;
+        grid-template-columns: 1fr 1fr;
+        gap: 6px
+      }
+
+      #imp-simulator input,
+      #imp-simulator select {
+        width: 100%;
+        min-width: 0;
+        border: 1px solid #c8d4cd;
+        background: white;
+        color: #203e36;
+        border-radius: 5px;
+        padding: 7px 6px;
+        font: 13px Arial;
+        margin-top: 3px
+      }
+
+      #imp-simulator .unit {
+        font-size: 12px;
+        color: #64756f;
+        margin-top: 6px
+      }
+
+      #imp-simulator button {
+        font: 12px Arial;
+        border: 1px solid #c8d4cd;
+        background: white;
+        border-radius: 5px;
+        color: var(--imp);
+        padding: 7px 10px
+      }
+
+      #imp-simulator button[aria-pressed=true],
+      #imp-simulator .play {
+        background: var(--imp);
+        color: white;
+        border-color: var(--imp)
+      }
+
+      #imp-simulator .workspace {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+        grid-template-rows: 22cqw auto;
+        gap: 16px 24px;
+        padding: 14px 20px 20px;
+        background: white;
+        align-items: start
+      }
+
+      #imp-simulator .scene {
+        grid-column: 1/-1;
+        grid-row: 1/3;
+        width: 100%;
+        height: auto;
+        min-width: 0;
+        display: block;
+        align-self: start
+      }
+
+      #imp-simulator .scene text {
+        font-family: Arial;
+        fill: #35564c
+      }
+
+      #imp-simulator .scene .stage {
+        cursor: inherit
+      }
+
+      #imp-simulator .scene .node {
+        fill: white;
+        stroke: #004a44;
+        stroke-width: 1.7
+      }
+
+      #imp-simulator .scene .stage.active .node {
+        fill: #004a44;
+        stroke: #b99056;
+        stroke-width: 3
+      }
+
+      #imp-simulator .scene .stage.active .num {
+        fill: white
+      }
+
+      #imp-simulator .scene .num {
+        font-size: 13px;
+        font-weight: bold;
+        text-anchor: middle;
+        dominant-baseline: middle
+      }
+
+      #imp-simulator .results {
+        grid-column: 2;
+        grid-row: 2;
+        position: relative;
+        min-width: 0;
+        width: 100%;
+        background: white;
+        border: 1px solid #d9e1db;
+        border-radius: 8px;
+        padding: 14px;
+        box-shadow: 0 5px 18px #004a4408
+      }
+
+      #imp-simulator .result-head {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px
+      }
+
+      #imp-simulator .result-head strong {
+        color: var(--imp);
+        font-size: 14px
+      }
+
+      #imp-simulator .result-head select {
+        width: 135px;
+        margin: 0
+      }
+
+      #imp-simulator .chart {
+        display: block;
+        width: 100%;
+        height: 160px
+      }
+
+      #imp-simulator .chart text {
+        font: 12px Arial;
+        fill: #53665e
+      }
+
+      #imp-simulator .selected {
+        display: flex;
+        justify-content: space-between;
+        gap: 10px;
+        align-items: center;
+        border-top: 1px solid var(--line);
+        padding-top: 8px;
+        margin-top: 4px;
+        font-size: 12px
+      }
+
+      #imp-simulator .selected b {
+        color: var(--imp)
+      }
+
+      #imp-simulator table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+        margin-top: 8px;
+        font-variant-numeric: tabular-nums
+      }
+
+      #imp-simulator th {
+        font-weight: normal;
+        text-align: left;
+        color: #63756c;
+        padding: 4px 6px;
+        border-bottom: 1px solid var(--line)
+      }
+
+      #imp-simulator td {
+        padding: 4px 6px;
+        border-bottom: 1px solid #eef2ed
+      }
+
+      #imp-simulator td:last-child {
+        text-align: right;
+        color: var(--imp);
+        font-weight: bold
+      }
+
+      #imp-simulator .nav {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+        padding: 15px 22px;
+        background: white;
+        border-top: 1px solid var(--line)
+      }
+
+      #imp-simulator .footer {
+        display: flex;
+        justify-content: space-between;
+        gap: 12px;
+        padding: 12px 22px;
+        align-items: center;
+        background: #f0f4f1;
+        font-size: 12px;
+        color: #56695f
+      }
+
+      #imp-simulator .actions {
+        display: flex;
+        gap: 6px
+      }
+
+      #imp-simulator .error {
+        margin: 0;
+        padding: 8px 22px;
+        color: var(--wine);
+        background: #fff2ee;
+        font-size: 12px
+      }
+
+      #imp-simulator .error:empty {
+        display: none
+      }
+
+      #imp-simulator .legend {
+        display: flex;
+        gap: 15px;
+        flex-wrap: wrap
+      }
+
+      #imp-simulator .dot {
+        display: inline-block;
+        width: 8px;
+        height: 8px;
+        margin-right: 5px;
+        border-radius: 50%
+      }
+
+      #imp-simulator .swt {
+        display: inline-block;
+        width: 14px;
+        height: 4px;
+        vertical-align: middle;
+        margin-right: 5px
+      }
+
+      #imp-simulator [hidden] {
+        display: none !important
+      }
+
+      #imp-simulator .view-switch {
+        display: flex;
+        gap: 6px;
+        margin-bottom: 12px
+      }
+
+      #imp-simulator .view-switch button {
+        flex: 1;
+        min-height: 36px
+      }
+
+      #imp-simulator .phase-chart {
+        display: block;
+        width: 100%;
+        height: 285px;
+        overflow: visible
+      }
+
+      #imp-simulator .phase-chart text {
+        font: 11px Arial;
+        fill: #52675f
+      }
+
+      #imp-simulator .pt-point {
+        cursor: pointer;
+        outline: none
+      }
+
+      #imp-simulator .pt-point:focus-visible circle {
+        stroke: #820000;
+        stroke-width: 2
+      }
+
+      #imp-simulator .phase-key {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px 14px;
+        font-size: 11px;
+        color: #52675f;
+        margin: 4px 0 10px
+      }
+
+      #imp-simulator .phase-caption {
+        font-size: 11px;
+        color: #63756c;
+        margin: 5px 0
+      }
+
+      #imp-simulator .phase-readout {
+        padding: 8px 10px;
+        border-left: 3px solid #b99056;
+        background: #f7f3eb;
+        border-radius: 3px;
+        font-size: 12px;
+        margin: 8px 0
+      }
+
+      #imp-simulator #imp-envelope-position {
+        display: block;
+        color: #63756c;
+        font-size: 11px;
+        margin-top: 3px
+      }
+
+      @container(max-width:800px) {
+        #imp-simulator .controls {
+          grid-template-columns: repeat(3, 1fr)
+        }
+
+        #imp-simulator .results {
+          position: static;
+          width: 100%;
+          margin: 10px 0 16px
+        }
+
+        #imp-simulator .scene {
+          min-height: 310px
+        }
+
+        #imp-simulator .workspace {
+          display: block;
+          padding: 8px 12px;
+          min-height: 0
+        }
+
+        #imp-simulator .footer {
+          flex-wrap: wrap
+        }
+
+        #imp-simulator .scene .scene-label {
+          display: none
+        }
+      }
+
+      @container(max-width:460px) {
+        #imp-simulator header {
+          padding: 16px;
+          flex-wrap: wrap
+        }
+
+        #imp-simulator h2 {
+          font-size: 23px
+        }
+
+        #imp-simulator .controls {
+          grid-template-columns: repeat(2, 1fr);
+          padding: 12px
+        }
+
+        #imp-simulator .controls fieldset:first-child {
+          grid-column: 1/-1
+        }
+
+        #imp-simulator input,
+        #imp-simulator select {
+          font-size: 16px
+        }
+
+        #imp-simulator .nav {
+          padding: 12px
+        }
+
+        #imp-simulator .scene {
+          min-height: 230px
+        }
+
+        #imp-simulator .scene text {
+          display: none
+        }
+
+        #imp-simulator .scene .num {
+          display: block
+        }
+
+        #imp-simulator button {
+          min-height: 38px
+        }
+      }
+    </style>
+    <header>
+      <div>
+        <div class="eyebrow">PROPIEDADES DE LOS FLUIDOS · COSTA AFUERA</div>
+        <h2>De pozo a tanque</h2>
+      </div><span class="status">Simulador didáctico · correlaciones PVT</span>
+    </header>
+    <div class="controls">
+
+      <img src="./IMP_Logo.jpg" alt="Instituto Mexicano del Petróleo" style="width:110px; height:auto; flex-shrink:0;">
+
+      <fieldset>
+        <legend>Fluido</legend><label>Tipo de fluido<select id="imp-fluid">
+            <option value="negro">Aceite negro</option>
+            <option value="volatil">Aceite volátil</option>
+            <option value="condensado">Gas y condensado</option>
+            <option value="humedo">Gas húmedo</option>
+            <option value="seco">Gas seco</option>
+          </select></label>
+        <div class="unit">Instalación offshore</div>
+      </fieldset>
+      <fieldset>
+        <legend>Yacimiento</legend>
+        <div class="pair"><label>P · psia<input id="imp-pr" type="number" value="5000" min="1000" max="10000"
+              step="100"></label><label>T · °F<input id="imp-tr" type="number" value="200" min="100" max="350"></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Separador 1</legend>
+        <div class="pair"><label>P · psia<input id="imp-p1" type="number" value="800" min="30" max="3000"
+              step="25"></label><label>T · °F<input id="imp-t1" type="number" value="95" min="40" max="250"></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Separador 2</legend>
+        <div class="pair"><label>P · psia<input id="imp-p2" type="number" value="224" min="16" max="1000"
+              step="10"></label><label>T · °F<input id="imp-t2" type="number" value="82" min="40" max="250"></label>
+        </div>
+      </fieldset>
+      <fieldset>
+        <legend>Tanque</legend>
+        <div class="pair"><label>P · psia<input value="14.7" readonly aria-label="Presión del tanque"></label><label>T ·
+            °F<input id="imp-tt" type="number" value="60" readonly></label></div>
+      </fieldset>
+    </div>
+    <div id="imp-fluid-note" style="background:#f3f6f1;color:#004A44;padding:10px 22px;font-size:13px"></div>
+    <p class="error" role="alert" id="imp-error"></p>
+    <div class="workspace">
+      <svg class="scene" viewBox="0 0 1000 730" role="img"
+        aria-label="Diagrama isométrico de siete etapas, desde un yacimiento submarino a dos separadores y un tanque">
+        <defs>
+          <linearGradient id="imp-metal" x2="0" y2="1">
+            <stop stop-color="#f7faf7" />
+            <stop offset=".55" stop-color="#d8e5db" />
+            <stop offset="1" stop-color="#91aca0" />
+          </linearGradient>
+          <pattern id="imp-hatch" width="12" height="12" patternUnits="userSpaceOnUse">
+            <path d="M0 12L12 0" stroke="#b99056" stroke-opacity=".16" />
+          </pattern>
+          <marker id="imp-arrow" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+            <path d="M0 0L6 3L0 6" fill="none" stroke="#b99056" stroke-width="1.4" />
+          </marker>
+        </defs>
+        <path d="M30 198L234 127L484 225L280 298Z" fill="#eff6f2" stroke="#c3d8cd" />
+        <path d="M30 198V425L280 525V298Z" fill="#e2eee7" stroke="#bdcfc3" />
+        <path d="M280 298L484 225V452L280 525Z" fill="#d3e5dc" stroke="#bdcfc3" />
+        <path d="M30 425L280 525L484 452V594L280 674L30 569Z" fill="#e4dbca" stroke="#c6b9a2" />
+        <path d="M30 460L280 560L484 487M30 485L280 585L484 512" fill="none" stroke="#c7b79a" />
+        <path d="M30 425L280 525L484 452V594L280 674L30 569Z" fill="url(#imp-hatch)" />
+        <path d="M70 550Q128 515 218 581L264 613Q192 622 99 578Z" class="oil-fill" fill="#392b40" opacity=".9" />
+        <path d="M150 568V470L218 443V187" fill="none" stroke="#63867a" stroke-width="14" stroke-linejoin="round" />
+        <path d="M150 568V470L218 443V187" fill="none" stroke="#dce9e0" stroke-width="8" stroke-linejoin="round" />
+        <path d="M150 568V470L218 443V187" fill="none" class="oil-stroke" stroke="#392b40" stroke-width="4"
+          stroke-linejoin="round" />
+        <path d="M150 548V510M175 460L200 450M218 360V305M218 260V210" fill="none" stroke="#b99056" stroke-width="2"
+          marker-end="url(#imp-arrow)" />
+        <g fill="#e6d595">
+          <g data-bubble-stage="1">
+            <circle cx="150" cy="535" r="2" />
+          </g>
+          <g data-bubble-stage="2">
+            <circle cx="150" cy="475" r="2" />
+          </g>
+          <g data-bubble-stage="3">
+            <circle cx="218" cy="340" r="3" />
+            <circle cx="218" cy="310" r="2" />
+            <circle cx="218" cy="285" r="3" />
+            <circle cx="218" cy="255" r="2" />
+          </g>
+        </g>
+        <path d="M146 472V445M128 458H173M138 446H163" stroke="#004a44" stroke-width="7" />
+        <circle cx="177" cy="458" r="8" fill="none" stroke="#820000" stroke-width="2" />
+        <path d="M493 108L810 165L963 105L648 50Z" fill="#eef2ed" stroke="#9eafa4" />
+        <path d="M493 108V120L810 178V165ZM810 165L963 105V117L810 178" fill="#b9cac0" stroke="#9eafa4" />
+        <path d="M509 122V190M800 179V200M944 122V175" stroke="#869f91" stroke-width="5" />
+        <g id="imp-feed-pipe" fill="none" stroke-linejoin="round" stroke-linecap="round">
+          <path d="M218 187L507 104Q516 101 516 92V82Q516 73 525 73H535" stroke="#527267" stroke-width="9" />
+          <path d="M218 187L507 104Q516 101 516 92V82Q516 73 525 73H535" stroke="#dce9e0" stroke-width="5.5" />
+          <path d="M218 187L507 104Q516 101 516 92V82Q516 73 525 73H535" class="oil-stroke" stroke="#392b40"
+            stroke-width="2.5" />
+        </g>
+        <g id="imp-separator-1" transform="translate(535 37)">
+          <path d="M18 55V77M85 66V88" stroke="#668477" stroke-width="6" />
+          <path d="M11 8Q-4 10 0 37Q2 50 19 53L94 67Q114 67 114 41Q114 24 99 22Z" fill="url(#imp-metal)"
+            stroke="#527267" stroke-width="1.5" />
+          <ellipse cx="101" cy="44" rx="13" ry="23" fill="#d2dfd7" stroke="#527267" />
+          <path d="M15 34L86 48V59L16 46Z" class="oil-fill" fill="#392b40" />
+          <path d="M15 22L86 36V47L15 33Z" fill="#efe2a6" />
+          <path d="M63 18V0H111" fill="none" stroke="#b99056" stroke-width="4" marker-end="url(#imp-arrow)" />
+        </g>
+        <g id="imp-transfer-pipe" fill="none" stroke-linejoin="round" stroke-linecap="round">
+          <path d="M636 91L663 97H681Q688 97 688 90H700" stroke="#527267" stroke-width="9" />
+          <path d="M636 91L663 97H681Q688 97 688 90H700" stroke="#dce9e0" stroke-width="5.5" />
+          <path d="M636 91L663 97H681Q688 97 688 90H700" class="oil-stroke" stroke="#392b40" stroke-width="2.5" />
+        </g>
+        <g id="imp-separator-2" transform="translate(699 65)">
+          <path d="M11 49V66M62 56V73" stroke="#668477" stroke-width="5" />
+          <path d="M8 7Q-5 7 0 29Q2 43 15 46L70 57Q87 59 87 36Q87 21 74 19Z" fill="url(#imp-metal)" stroke="#527267"
+            stroke-width="1.5" />
+          <ellipse cx="76" cy="38" rx="11" ry="19" fill="#d2dfd7" stroke="#527267" />
+          <path d="M12 29L62 39V50L12 40Z" class="oil-fill" fill="#392b40" />
+          <path d="M12 18L62 28V38L12 28Z" fill="#efe2a6" />
+          <path d="M42 14V-9H85" fill="none" stroke="#b99056" stroke-width="4" marker-end="url(#imp-arrow)" />
+        </g>
+        <g id="imp-tank-pipe" fill="none" stroke-linejoin="round" stroke-linecap="round">
+          <path d="M775 109L817 117Q825 119 825 111V100Q825 94 831 94H838" stroke="#527267" stroke-width="9" />
+          <path d="M775 109L817 117Q825 119 825 111V100Q825 94 831 94H838" stroke="#dce9e0" stroke-width="5.5" />
+          <path d="M775 109L817 117Q825 119 825 111V100Q825 94 831 94H838" class="oil-stroke" stroke="#392b40"
+            stroke-width="2.5" />
+        </g>
+        <g id="imp-storage-tank" transform="translate(838 10)">
+          <path d="M0 27V100C0 126 112 126 112 100V27" fill="url(#imp-metal)" stroke="#527267" stroke-width="1.5" />
+          <ellipse cx="56" cy="27" rx="56" ry="19" fill="#f1f5ef" stroke="#527267" stroke-width="1.5" />
+          <g id="imp-tank-liquid">
+            <path d="M20 70V100Q57 117 93 100V70Z" fill="#392b40" />
+            <ellipse cx="56.5" cy="70" rx="36.5" ry="8" fill="#5a405e" />
+          </g>
+          <path d="M56 7V-3" stroke="#527267" stroke-width="4" />
+        </g>
+        <g id="imp-pipe-ports" fill="#dce9e0" stroke="#527267" stroke-width="1.4">
+          <ellipse id="imp-sep1-inlet" cx="535" cy="73" rx="3" ry="5.5" />
+          <ellipse id="imp-sep1-outlet" cx="636" cy="91" rx="3" ry="5.5" />
+          <ellipse id="imp-sep2-inlet" cx="700" cy="90" rx="3" ry="5" />
+          <ellipse id="imp-sep2-outlet" cx="775" cy="109" rx="3" ry="5" />
+          <ellipse id="imp-tank-inlet" cx="838" cy="94" rx="3" ry="5.5" />
+        </g>
+        <text class="scene-label" x="45" y="223" font-size="13">Agua de mar</text><text class="scene-label" x="48"
+          y="427" font-size="12">Lecho marino</text><text class="scene-label" x="59" y="646" font-size="13">Roca
+          yacimiento</text><text class="scene-label" x="249" y="298" font-size="12">Pozo sumergido</text>
+        <path d="M127 434 Q148 409 177 429" fill="none" stroke="#820000" stroke-width="2" /><text class="scene-label"
+          x="58" y="410" font-size="12" style="fill:#820000">Choque térmico</text><text class="scene-label" x="483"
+          y="192" font-size="12">Instalación offshore</text>
+        <text class="scene-label" x="558" y="151" font-size="12">Separador 1</text><text class="scene-label" x="698"
+          y="167" font-size="12">Separador 2</text><text class="scene-label" x="868" y="161"
+          font-size="12">Tanque</text>
+        <g class="stage active cursor-interaction" data-stage="0" transform="translate(103 566)">
+          <circle class="node" r="17" /><text class="num">1</text>
+        </g>
+        <g class="stage cursor-interaction" data-stage="1" transform="translate(150 535)">
+          <circle class="node" r="17" /><text class="num">2</text>
+        </g>
+        <g class="stage cursor-interaction" data-stage="2" transform="translate(150 444)">
+          <circle class="node" r="17" /><text class="num">3</text>
+        </g>
+        <g class="stage cursor-interaction" data-stage="3" transform="translate(218 295)">
+          <circle class="node" r="17" /><text class="num">4</text>
+        </g>
+        <g class="stage cursor-interaction" data-stage="4" transform="translate(595 75)">
+          <circle class="node" r="17" /><text class="num">5</text>
+        </g>
+        <g class="stage cursor-interaction" data-stage="5" transform="translate(735 105)">
+          <circle class="node" r="17" /><text class="num">6</text>
+        </g>
+        <g class="stage cursor-interaction" data-stage="6" transform="translate(892 85)">
+          <circle class="node" r="17" /><text class="num">7</text>
+        </g>
+      </svg>
+      <section class="results" aria-label="Gráfica y tabla de propiedades">
+        <div class="view-switch" role="group" aria-label="Vista de resultados"><button type="button"
+            data-view="properties" aria-pressed="true">Propiedades</button><button type="button" data-view="phase"
+            aria-pressed="false">Diagrama de fases</button></div>
+        <div class="result-head"><strong id="imp-results-title">Propiedades del recorrido</strong><select
+            id="imp-property" aria-label="Propiedad de la gráfica">
+            <option value="P">Presión</option>
+            <option value="T">Temperatura</option>
+            <option value="Bo">Bo</option>
+            <option value="rho">Densidad</option>
+            <option value="mu">Viscosidad</option>
+            <option value="Rs">Rs</option>
+          </select></div>
+        <div id="imp-properties-view"><svg class="chart" role="img" aria-label="Perfil ilustrativo por etapa"></svg>
+        </div>
+        <div id="imp-phase-view" hidden>
+          <div class="phase-caption">Envolvente ilustrativa · fluido original</div>
+          <svg id="imp-phase-chart" class="phase-chart" role="group"
+            aria-label="Diagrama presión-temperatura; selecciona un punto para ver su etapa"></svg>
+          <div class="phase-key"><span><i class="swt" style="background:#004a44"></i>Burbuja</span><span><i class="swt"
+                style="background:#820000"></i>Rocío</span><span><i class="swt"
+                style="background:#b99056"></i>Recorrido</span><span><i class="dot"
+                style="background:#edf3ef;border:1px solid #c8d4cd"></i>Dos fases</span></div>
+          <div class="phase-caption" id="imp-envelope-ref"></div>
+          <div class="phase-readout"><strong id="imp-pt-state"></strong><span id="imp-envelope-position"></span></div>
+          <p class="phase-caption" id="imp-envelope-note"></p>
+        </div>
+        <div id="imp-stage-note" style="font-size:12px;color:#52675f;padding:5px 0"></div>
+        <div class="selected" aria-live="polite"><b id="imp-stage-name">1 · Yacimiento</b><span
+            id="imp-phase">Líquido</span></div>
+        <table>
+          <thead>
+            <tr>
+              <th>Propiedad</th>
+              <th>Unidad</th>
+              <th style="text-align:right">Valor</th>
+            </tr>
+          </thead>
+          <tbody id="imp-values"></tbody>
+        </table>
+      </section>
+    </div>
+    <nav class="nav" aria-label="Etapas del recorrido" id="imp-stages"></nav>
+    <div class="footer">
+      <div class="legend"><span><i class="dot" style="background:#392b40"></i>Aceite</span><span><i class="dot"
+            style="background:#d6bd6c"></i>Gas</span><span><i class="swt"
+            style="background:#004a44"></i>#004A44</span><span><i class="swt"
+            style="background:#820000"></i>#820000</span><span><i class="swt"
+            style="background:#B99056"></i>#B99056</span></div>
+      <div class="actions"><button id="imp-prev" class="cursor-interaction"
+          aria-label="Etapa anterior">Anterior</button><button id="imp-play"
+          class="play cursor-interaction">Reproducir</button><button id="imp-next" class="cursor-interaction"
+          aria-label="Etapa siguiente">Siguiente</button></div>
+    </div>
+    <div style="padding:8px 22px;font-size:12px;color:#64756c">Propiedades calculadas por correlaciones. Perfil P–T
+      didáctico: no resuelve flujo multifásico ni transferencia de calor. Geometría y fases sin escala.</div>
+    <details style="padding:14px 22px;background:white;border-top:1px solid #d5ded9;font-size:13px">
+      <summary style="color:#004A44;font-weight:bold">Notas y referencias</summary>
+      <p>Unidades: psia, °F, scf/STB. Bo en bbl/STB; densidad en kg/m³; viscosidad en cP.</p>
+      <p>Referencias: <a href="https://wiki.whitson.com/bopvt/vol_props_correlations/" target="_blank"
+          rel="noopener">Standing y propiedades volumétricas</a> · <a
+          href="https://wiki.whitson.com/bopvt/visc_correlations/" target="_blank" rel="noopener">Viscosidad de Lee</a>.
+      </p>
+
+    </details>
+    <script>(() => {
+        const root = document.getElementById('imp-simulator'), q = s => root.querySelector(s);
+        function apiToSG(api) { return 141.5 / (131.5 + api); }
+
+        function standingRs(P, Tf, API, gg) {
+          var a = 0.00091 * Tf - 0.0125 * API;
+          return gg * Math.pow((P / 18.2 + 1.4) * Math.pow(10, -a), 1 / 0.83);
+        }
+        function standingPb(Rsb, Tf, API, gg) {
+          var a = 0.00091 * Tf - 0.0125 * API;
+          return 18.2 * (Math.pow(Rsb / gg, 0.83) * Math.pow(10, a) - 1.4);
+        }
+        function standingBo(Rs, Tf, gg, go) {
+          var F = Rs * Math.sqrt(gg / go) + 1.25 * Tf;
+          return 0.972 + 0.000144 * Math.pow(F, 1.175);
+        }
+        function oilDensityLbft3(Rs, Bo, go, gg) {
+          return (62.4 * go + 0.0136 * Rs * gg) / Bo;
+        }
+        function deadOilVisc(Tf, API) {
+          var Y = Math.pow(10, 3.0324 - 0.02023 * API);
+          var X = Y * Math.pow(Tf, -1.163);
+          return Math.pow(10, X) - 1;
+        }
+        function liveOilVisc(muod, Rs) {
+          var A = 10.715 * Math.pow(Rs + 100, -0.515);
+          var B = 5.44 * Math.pow(Rs + 150, -0.338);
+          return A * Math.pow(muod, B);
+        }
+        function undersatVisc(muob, P, Pb) {
+          if (P <= Pb) return muob;
+          return muob + 0.001 * (P - Pb) * (0.024 * Math.pow(muob, 1.6) + 0.038 * Math.pow(muob, 0.56));
+        }
+
+        function pseudoCrit(gg) {
+          return { Tpc: 169.2 + 349.5 * gg - 74.0 * gg * gg, Ppc: 756.8 - 131.07 * gg - 3.6 * gg * gg };
+        }
+        function beggsBrillZ(Ppr, Tpr) {
+          var A = 1.39 * Math.pow(Tpr - 0.92, 0.5) - 0.36 * Tpr - 0.101;
+          var B = (0.62 - 0.23 * Tpr) * Ppr + (0.066 / (Tpr - 0.86) - 0.037) * Ppr * Ppr + 0.32 * Math.pow(Ppr, 6) / Math.pow(10, 9 * (Tpr - 1));
+          var C = 0.132 - 0.32 * (Math.log(Tpr) / Math.LN10);
+          var D = Math.pow(10, 0.3106 - 0.49 * Tpr + 0.1824 * Tpr * Tpr);
+          var Z = A + (1 - A) / Math.exp(B) + C * Math.pow(Ppr, D);
+          if (Tpr <= 0.92 || !isFinite(Z) || Z <= 0) return NaN;
+          return Z;
+        }
+        function gasBg(Z, Tr, P) { return 0.02827 * Z * Tr / P; }
+        function gasMW(gg) { return 28.97 * gg; }
+        function gasDensityLbft3(P, Mg, Z, Tr) { return (P * Mg) / (Z * 10.732 * Tr); }
+        function leeVisc(Tr, Mg, rhoLbft3) {
+          var rho = rhoLbft3 * 0.0160185;
+          var K = ((9.4 + 0.02 * Mg) * Math.pow(Tr, 1.5)) / (209 + 19 * Mg + Tr);
+          var X = 3.5 + 986 / Tr + 0.01 * Mg;
+          var Y = 2.4 - 0.2 * X;
+          return (K * Math.exp(X * Math.pow(rho, Y))) / 10000;
+        }
+        function condensateDropout(P, Pdew, Lmax) {
+          if (P >= Pdew) return 0;
+          var k = 0.0016;
+          return Lmax * (1 - Math.exp(-k * (Pdew - P)));
+        }
+
+        /* ---------------- fluid presets ---------------- */
+        var FLUIDS = {
+          negro: {
+            label: 'Aceite negro', kind: 'oil', API: 32, gg: 0.75, Rsi: standingRs(1300, 200, 32, 0.75),
+            Pres: { min: 2200, max: 6500, def: 5000 }, Tres: { min: 150, max: 230, def: 200 }
+          },
+          volatil: {
+            label: 'Aceite volátil', kind: 'oil', API: 45, gg: 0.85, Rsi: standingRs(3500, 225, 45, 0.85),
+            Pres: { min: 4000, max: 7800, def: 5000 }, Tres: { min: 190, max: 260, def: 225 }
+          },
+          condensado: {
+            label: 'Gas y condensado', kind: 'gas-condensate', gg: 0.75, Pdew: 5600, Lmax: 0.16,
+            Pres: { min: 4500, max: 8800, def: 5000 }, Tres: { min: 230, max: 320, def: 270 }
+          },
+          humedo: {
+            label: 'Gas húmedo', kind: 'wet-gas', gg: 0.68,
+            Pres: { min: 4000, max: 7800, def: 5200 }, Tres: { min: 220, max: 300, def: 250 }
+          },
+          seco: {
+            label: 'Gas seco', kind: 'dry-gas', gg: 0.60,
+            Pres: { min: 3500, max: 7200, def: 4800 }, Tres: { min: 200, max: 300, def: 240 }
+          }
+        };
+        var FLUID_ORDER = ['negro', 'volatil', 'condensado', 'humedo', 'seco'];
+
+        const names = ['Yacimiento', 'Fondo de pozo', 'Cabeza de pozo', 'Pozo sumergido', 'Separador 1', 'Separador 2', 'Tanque'];
+        const baseMeta = { P: ['Presión', 'psia', 0], T: ['Temperatura', '°F', 1], Bo: ['Bo', 'bbl/STB', 3], rho: ['Densidad del aceite', 'kg/m³', 1], mu: ['Viscosidad del aceite', 'cP', 3], Rs: ['Rs', 'scf/STB', 1], Pb: ['Pb local', 'psia', 0] };
+        const gasMeta = { P: ['Presión', 'psia', 0], T: ['Temperatura', '°F', 1], Z: ['Factor Z', '—', 3], Bg: ['Bg', 'ft³/scf', 5], rho: ['Densidad del gas', 'kg/m³', 2], mu: ['Viscosidad del gas', 'cP', 4] };
+        let meta = baseMeta, selected = 0, timer = null, rows = [], notes = [], valid = true;
+        const val = id => Number(q('#imp-' + id).value);
+        const format = (v, d) => Number.isFinite(v) ? v.toFixed(d) : 'No disponible';
+        function makeRoute(f, c) {
+          const bh = .85 * c.pr, head = c.p1 + .18 * (bh - c.p1), sub = c.p1 + .08 * (bh - c.p1);
+          const th = c.tr - 5, tc = 40 + .4 * (th - 40), ts = 40 + .6 * (tc - 40);
+          const P = [c.pr, bh, head, sub, c.p1, c.p2, 14.7], T = [c.tr, th, tc, ts, c.t1, c.t2, 60];
+          let available = f.Rsi;
+          return P.map((p, i) => {
+            const t = T[i], tr = t + 459.67, r = { P: p, T: t, phase: 'gas', warnings: [] };
+            if (f.kind === 'oil') {
+              const go = apiToSG(f.API), pb = standingPb(available, t, f.API, f.gg);
+              r.Pb = pb; r.Rs = Math.min(available, Math.max(0, standingRs(p, t, f.API, f.gg)));
+              const bob = standingBo(available, t, f.gg, go);
+              r.Bo = p > pb ? bob * Math.exp(-.00001 * (p - pb)) : standingBo(r.Rs, t, f.gg, go);
+              r.rho = oilDensityLbft3(r.Rs, r.Bo, go, f.gg) * 16.0185;
+              r.mu = undersatVisc(liveOilVisc(deadOilVisc(t, f.API), r.Rs), p, pb);
+              r.phase = available - r.Rs > 0.01 ? 'dosfases' : 'liquido';
+              r.free = Math.max(0, available - r.Rs);
+              if (t < 100 || t > 258 || f.Rsi > 1425) r.warnings.push('Extrapolación de Standing');
+              if (i === 4 || i === 5) available = r.Rs;
+              if (i === 6) { r.Rs = 0; r.Bo = 1; r.rho = 62.4 * go * 16.0185; r.mu = deadOilVisc(60, f.API); r.phase = 'tanque'; r.free = 0; r.Pb = null; }
+            } else {
+              const pc = pseudoCrit(f.gg), tp = tr / pc.Tpc, pp = p / pc.Ppc, mw = gasMW(f.gg);
+              r.Z = beggsBrillZ(pp, tp);
+              if (tp < 1.05 || tp > 3 || pp > 15) { r.warnings.push('Z fuera del intervalo de uso de esta demostración'); r.Z = NaN; }
+              r.Bg = gasBg(r.Z, tr, p); const rho = gasDensityLbft3(p, mw, r.Z, tr); r.rho = rho * 16.0185; r.mu = leeVisc(tr, mw, rho);
+              const drop = f.kind === 'gas-condensate' ? condensateDropout(p, f.Pdew, f.Lmax) : (f.kind === 'wet-gas' && i >= 4 ? .025 : 0);
+              r.phase = drop > .004 ? 'gasliq' : 'gas'; r.liq = drop;
+              if (drop > 0) r.warnings.push('Líquido ilustrativo, sin flash');
+              if (i === 6) r.warnings.push('Referencia de gas a 14.7 psia y 60 °F; no representa almacenamiento de gas en tanque abierto');
+            }
+            return r;
+          });
+        }
+        function getConfig() { return Object.fromEntries(['pr', 'tr', 'p1', 't1', 'p2', 't2'].map(k => [k, val(k)])); }
+        function data() {
+          const c = getConfig();
+          const blank = ['pr', 'tr', 'p1', 't1', 'p2', 't2'].some(k => q('#imp-' + k).value.trim() === '');
+          let err = '';
+          if (blank || !Object.values(c).every(Number.isFinite)) err = 'Completa todos los campos con valores numéricos.';
+          else if (c.pr < 1000 || c.pr > 10000 || c.tr < 100 || c.tr > 350) err = 'Yacimiento: P entre 1000 y 10000 psia; T entre 100 y 350 °F.';
+          else if (c.p1 >= .65 * c.pr || c.p1 <= c.p2 || c.p2 <= 14.7) err = 'Usa P sep. 1 < 0.65 P yacimiento y P sep. 1 > P sep. 2 > 14.7 psia.';
+          else if (c.t1 < 40 || c.t1 > 250 || c.t2 < 40 || c.t2 > 250) err = 'Temperaturas de separadores: entre 40 y 250 °F.';
+          q('#imp-error').textContent = err; valid = !err;
+          q('.results').style.opacity = valid ? '1' : '.35';
+          q('#imp-play').disabled = !valid;
+          if (!valid) { stop(); return false; }
+          const f = FLUIDS[q('#imp-fluid').value]; rows = makeRoute(f, c); meta = f.kind === 'oil' ? baseMeta : gasMeta;
+          const select = q('#imp-property'), old = select.value;
+          select.innerHTML = Object.entries(meta).filter(([k]) => k !== 'Pb').map(([k, m]) => `<option value="${k}">${({ rho: 'Densidad', mu: 'Viscosidad', P: 'Presión', T: 'Temperatura' })[k] || m[0]}</option>`).join('');
+          if (meta[old] && old !== 'Pb') select.value = old; else select.value = 'P';
+          const info = f.kind === 'oil' ? `${f.API}° API · γg = ${f.gg} · Rsi = ${f.Rsi.toFixed(2)} scf/STB` : `γg = ${f.gg} · Las propiedades mostradas son de la fase gas`;
+          q('#imp-fluid-note').textContent = info + (f.kind === 'gas-condensate' || f.kind === 'wet-gas' ? ' · Condensación ilustrativa.' : '');
+          return true;
+        }
+        function draw() {
+          if (!rows.length || activeView !== 'properties') return;
+          const k = q('#imp-property').value, svg = q('.chart'), w = Math.max(250, svg.clientWidth), h = 160;
+          svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+          const vs = rows.map(r => r[k]), finite = vs.filter(Number.isFinite);
+          if (!finite.length) { svg.innerHTML = '<text x="20" y="70">Sin valores válidos para esta condición</text>'; return; }
+          const lo = Math.min(...finite), hi = Math.max(...finite), span = hi - lo || Math.max(1, hi * .1), y0 = lo - span * .12, y1 = hi + span * .12, X = i => 66 + i * (w - 84) / 6, Y = v => 117 - (v - y0) / (y1 - y0) * 87;
+          const tick = v => Math.abs(v) >= 1000 ? Math.round(v).toLocaleString('en-US') : v.toFixed(Math.min(meta[k][2], Math.abs(hi) < .1 ? 4 : 2));
+          let s = `<text x="4" y="14">${meta[k][0]} · ${meta[k][1]}</text>`;
+          for (let i = 0; i < 3; i++) { const v = lo + span * i / 2, y = Y(v); s += `<path d="M62 ${y}H${w - 12}" stroke="#e2e9e4"/><text x="57" y="${y + 4}" text-anchor="end">${tick(v)}</text>`; }
+          let d = '', on = false; vs.forEach((v, i) => { if (Number.isFinite(v)) { d += (on ? 'L' : 'M') + X(i) + ' ' + Y(v) + ' '; on = true; } else on = false; });
+          s += `<path d="${d}" fill="none" stroke="#004A44" stroke-width="2.5"/>`;
+          vs.forEach((v, i) => { if (Number.isFinite(v)) s += `<circle cx="${X(i)}" cy="${Y(v)}" r="${i === selected ? 6 : 3.5}" fill="${i === selected ? '#B99056' : '#004A44'}"/><circle data-point="${i}" cx="${X(i)}" cy="${Y(v)}" r="14" fill="transparent"><title>${names[i]}: ${format(v, meta[k][2])} ${meta[k][1]}</title></circle>`; s += `<text x="${X(i)}" y="135" text-anchor="middle">${i + 1}</text>`; });
+          s += `<text x="${w / 2}" y="157" text-anchor="middle">Etapa del recorrido</text>`; svg.innerHTML = s;
+          svg.querySelectorAll('[data-point]').forEach(c => c.onclick = () => { stop(); pick(Number(c.dataset.point)); });
+        }
+        // Geometric teaching envelopes. Only the oil bubble segment is based on Standing.
+        // The contours do not feed the PVT calculations or predict phase fractions.
+        let activeView = 'properties', phaseMap = null;
+        const envelopeCache = new Map();
+        function bezierPoints(a, b, c, d, n = 60) {
+          return Array.from({ length: n + 1 }, (_, i) => { const s = i / n, u = 1 - s; return [0, 1].map(k => u * u * u * a[k] + 3 * u * u * s * b[k] + 3 * u * s * s * c[k] + s * s * s * d[k]); });
+        }
+        function getEnvelope(key) {
+          if (envelopeCache.has(key)) return envelopeCache.get(key);
+          const f = FLUIDS[key]; let bubble, dew, reference = null, xmin = -180, xmax = 560;
+          if (f.kind === 'oil') {
+            const pb = t => standingPb(f.Rsi, t, f.API, f.gg), start = [-160, 0], end = [350, pb(350)];
+            bubble = bezierPoints(start, [-130, 60], [-30, pb(0) - 30 * 0.00091 * Math.LN10 * (pb(0) + 25.48)], [0, pb(0)]);
+            for (let t = 2.5; t <= 350; t += 2.5)bubble.push([t, pb(t)]);
+            dew = bezierPoints(end, [400, end[1] + 50 * 0.00091 * Math.LN10 * (end[1] + 25.48)], [485, end[1] * 1.6], [500, end[1] * .8]);
+            dew.push(...bezierPoints(dew.at(-1), [515, 0], [-80, 0], start).slice(1));
+            reference = [f.Tres.def, key === 'negro' ? 1300 : 3500];
+          } else if (key === 'condensado') {
+            bubble = bezierPoints([-160, 0], [-140, 2800], [10, 6200], [130, 6700]);
+            dew = bezierPoints(bubble.at(-1), [180, 7600], [240, 6900], [270, 5600]);
+            dew.push(...bezierPoints(dew.at(-1), [320, 3900], [345, 1500], [300, 700]).slice(1));
+            dew.push(...bezierPoints(dew.at(-1), [180, 0], [-50, 0], bubble[0]).slice(1));
+            reference = [270, 5600]; xmax = 400;
+          } else if (key === 'humedo') {
+            bubble = bezierPoints([-160, 0], [-155, 650], [-90, 1600], [-10, 1500]);
+            dew = bezierPoints(bubble.at(-1), [20, 1850], [75, 1550], [95, 900]);
+            dew.push(...bezierPoints(dew.at(-1), [110, 650], [130, 250], [110, 80]).slice(1));
+            dew.push(...bezierPoints(dew.at(-1), [50, 0], [-80, 0], bubble[0]).slice(1)); xmax = 400;
+          } else {
+            bubble = bezierPoints([-220, 0], [-220, 1500], [-180, 2800], [-120, 2400]);
+            dew = bezierPoints(bubble.at(-1), [-70, 3100], [-5, 1800], [-45, 400]);
+            dew.push(...bezierPoints(dew.at(-1), [-90, 0], [-170, 0], bubble[0]).slice(1)); xmin = -240; xmax = 400;
+          }
+          const result = { bubble, dew, reference, xmin, xmax, polygon: [...bubble, ...dew.slice(1)] };
+          envelopeCache.set(key, result); return result;
+        }
+        function inEnvelope(point, polygon) {
+          let inside = false; const [x, y] = point;
+          for (let i = 0, j = polygon.length - 1; i < polygon.length; j = i++) {
+            const a = polygon[i], b = polygon[j];
+            if ((a[1] > y) !== (b[1] > y) && x < (b[0] - a[0]) * (y - a[1]) / (b[1] - a[1]) + a[0]) inside = !inside;
+          }
+          return inside;
+        }
+        function phaseSummary() {
+          if (!rows.length) return;
+          const key = q('#imp-fluid').value, f = FLUIDS[key], r = rows[selected], e = getEnvelope(key);
+          q('#imp-pt-state').textContent = `${names[selected]} · ${format(r.P, 0)} psia · ${format(r.T, 1)} °F`;
+          q('#imp-envelope-position').textContent = (inEnvelope([r.T, r.P], e.polygon) ? 'Dentro' : 'Fuera') + ' de la región bifásica de referencia.';
+          q('#imp-envelope-ref').textContent = e.reference ? `${f.kind === 'oil' ? 'Burbuja' : 'Rocío'} de referencia: ${e.reference[1]} psia a ${e.reference[0]} °F.` : 'Contorno representativo sin presión de saturación calibrada.';
+          q('#imp-envelope-note').textContent = selected >= 4 ? 'Referencia del fluido original: en separadores y tanque no representa la composición del líquido residual. La tabla conserva sus correlaciones.' : 'Envolvente ilustrativa del fluido original. El contorno y los cruces orientan la lectura; no calculan fracciones de gas o líquido.';
+        }
+        function drawPhase() {
+          if (activeView !== 'phase' || !rows.length) return;
+          const svg = q('#imp-phase-chart'), key = q('#imp-fluid').value, e = getEnvelope(key);
+          const w = Math.max(270, svg.clientWidth), h = 285, left = 48, right = 18, top = 25, bottom = 242;
+          const ymax = Math.max(6000, Math.ceil(Math.max(...e.polygon.map(p => p[1]), ...rows.map(r => r.P)) / 1000) * 1000);
+          const X = t => left + (t - e.xmin) / (e.xmax - e.xmin) * (w - left - right), Y = p => bottom - p / ymax * (bottom - top);
+          phaseMap = { X, Y }; svg.setAttribute('viewBox', `0 0 ${w} ${h}`);
+          const path = ps => ps.map((p, i) => `${i ? 'L' : 'M'}${X(p[0]).toFixed(2)} ${Y(p[1]).toFixed(2)}`).join(' ');
+          let s = '<title>Envolvente ilustrativa y trayectoria de siete etapas</title><desc>Verde: burbuja. Vino: rocío. Dorado: recorrido. El sombreado representa dos fases en el esquema de referencia.</desc>';
+          s += `<text x="${left}" y="13">Presión · psia</text>`;
+          const ystep = ymax > 8000 ? 2500 : 2000;
+          for (let p = 0; p <= ymax; p += ystep)s += `<path d="M${left} ${Y(p)}H${w - right}" stroke="#e4ebe6"/><text x="${left - 7}" y="${Y(p) + 4}" text-anchor="end">${p}</text>`;
+          const xstep = w < 440 ? 200 : 100;
+          for (let t = Math.ceil(e.xmin / xstep) * xstep; t <= e.xmax; t += xstep)s += `<path d="M${X(t)} ${top}V${bottom}" stroke="#f0f3ef"/><text x="${X(t)}" y="${bottom + 17}" text-anchor="middle">${t}</text>`;
+          s += `<path d="${path(e.polygon)} Z" fill="#004a44" fill-opacity=".07" stroke="none"/><path id="imp-bubble-curve" d="${path(e.bubble)}" fill="none" stroke="#004a44" stroke-width="2.3"/><path id="imp-dew-curve" d="${path(e.dew)}" fill="none" stroke="#820000" stroke-width="2.3"/>`;
+          s += `<path d="M${left} ${top}V${bottom}H${w - right}" fill="none" stroke="#889d92"/><text x="${(left + w - right) / 2}" y="${h - 6}" text-anchor="middle">Temperatura · °F</text>`;
+          const route = rows.map(r => [r.T, r.P]);
+          s += `<path id="imp-pt-route" d="${path(route)}" fill="none" stroke="#b99056" stroke-width="1.8" stroke-dasharray="5 3"/>`;
+          s += `<path d="${path(route.slice(0, selected + 1))}" fill="none" stroke="#b99056" stroke-width="2.5"/>`;
+          if (e.reference) { const [t, p] = e.reference, x = X(t), y = Y(p); s += `<path id="imp-saturation-reference" data-temperature="${t}" data-pressure="${p}" d="M${x} ${y - 5}L${x + 5} ${y}L${x} ${y + 5}L${x - 5} ${y}Z" fill="white" stroke="#52675f" stroke-width="1.5"><title>Saturación de referencia: ${p} psia a ${t} °F</title></path>`; }
+          // Number labels use leader lines and collision avoidance so near-atmospheric
+          // points remain distinguishable even when their actual P-T positions overlap.
+          const labels = [], pointPositions = route.map(p => [X(p[0]), Y(p[1])]);
+          rows.forEach((r, i) => {
+            const [x, y] = pointPositions[i], active = i === selected;
+            const candidates = [[14, -15], [-14, -15], [18, 13], [-18, 13], [33, -10], [-33, -10], [0, -34], [36, -32], [-36, -32], [0, -52]];
+            let best = null, bestCost = Infinity;
+            for (const [dx, dy] of candidates) {
+              const lx = Math.max(left + 9, Math.min(w - right - 9, x + dx)), ly = Math.max(top + 9, Math.min(bottom - 10, y + dy));
+              const collisions = labels.filter(l => Math.hypot(lx - l[0], ly - l[1]) < 20).length;
+              const hits = pointPositions.filter((p, j) => j !== i && Math.hypot(lx - p[0], ly - p[1]) < 13).length;
+              const cost = collisions * 1000 + hits * 300 + Math.hypot(lx - x, ly - y);
+              if (cost < bestCost) { best = [lx, ly]; bestCost = cost; }
+            }
+            const [lx, ly] = best; labels.push(best);
+            s += `<g class="pt-point" data-pt-stage="${i}" role="button" tabindex="0" aria-label="${i + 1}. ${names[i]}: ${format(r.P, 0)} psia y ${format(r.T, 1)} grados Fahrenheit" aria-pressed="${active}"><title>${i + 1} · ${names[i]}: ${format(r.P, 0)} psia · ${format(r.T, 1)} °F</title><path d="M${x} ${y}L${lx} ${ly}" stroke="#a89b81" stroke-width=".8"/><circle cx="${x}" cy="${y}" r="${active ? 5 : 3}" fill="${active ? '#b99056' : '#52675f'}" stroke="white" stroke-width="1"/><circle cx="${lx}" cy="${ly}" r="8" fill="${active ? '#b99056' : 'white'}" stroke="${active ? '#98743e' : '#b7c6bc'}"/><text x="${lx}" y="${ly + 3.5}" text-anchor="middle" style="font-size:10px;fill:${active ? 'white' : '#004a44'};font-weight:bold">${i + 1}</text><circle cx="${lx}" cy="${ly}" r="11" fill="transparent"/></g>`;
+          });
+          s += '<circle id="imp-pt-traveler" r="5.5" fill="#b99056" stroke="white" stroke-width="2" style="display:none;pointer-events:none"/>';
+          svg.innerHTML = s;
+          svg.querySelectorAll('[data-pt-stage]').forEach(el => {
+            const choose = () => { stop(); pick(Number(el.dataset.ptStage)); }; el.onclick = choose;
+            el.onkeydown = ev => { if (ev.key === 'Enter' || ev.key === ' ') { ev.preventDefault(); choose(); } };
+          });
+          phaseSummary();
+        }
+        function setView(view) {
+          activeView = view;
+          q('#imp-properties-view').hidden = view !== 'properties'; q('#imp-phase-view').hidden = view !== 'phase';
+          q('#imp-property').hidden = view !== 'properties';
+          q('#imp-results-title').textContent = view === 'phase' ? 'Diagrama de fases P–T' : 'Propiedades del recorrido';
+          root.querySelectorAll('[data-view]').forEach(b => b.setAttribute('aria-pressed', b.dataset.view === view));
+          if (view === 'phase') drawPhase(); else draw();
+        }
+        function redraw() { draw(); drawPhase(); }
+        function startPlayback() {
+          if (timer) { stop(); return; } if (!valid) return; if (selected === 6) pick(0);
+          q('#imp-play').textContent = 'Pausar'; let started = null;
+          function frame(now) {
+            if (!root.isConnected || !valid) { stop(); return; }
+            if (started === null) started = now;
+            const fraction = Math.min(1, (now - started) / 1400), a = rows[selected], b = rows[Math.min(6, selected + 1)];
+            if (activeView === 'phase' && phaseMap) {
+              const t = a.T + (b.T - a.T) * fraction, p = a.P + (b.P - a.P) * fraction, marker = q('#imp-pt-traveler');
+              marker.style.display = ''; marker.setAttribute('cx', phaseMap.X(t)); marker.setAttribute('cy', phaseMap.Y(p));
+              q('#imp-pt-state').textContent = `Trayecto ${selected + 1} → ${selected + 2} · ${p.toFixed(0)} psia · ${t.toFixed(1)} °F (interpolación visual)`;
+            }
+            if (fraction === 1) { pick(selected + 1); started = now; if (selected === 6) { stop(); return; } }
+            timer = requestAnimationFrame(frame);
+          }
+          timer = requestAnimationFrame(frame);
+        }
+
+        const phaseNames = { liquido: 'Aceite · una fase', dosfases: 'Gas + aceite', tanque: 'Aceite estabilizado', gas: 'Gas · una fase', gasliq: 'Gas + líquido ilustrativo' };
+        function render() {
+          root.querySelectorAll('[data-index]').forEach(b => b.setAttribute('aria-pressed', Number(b.dataset.index) === selected));
+          root.querySelectorAll('.stage').forEach(g => g.classList.toggle('active', Number(g.dataset.stage) === selected));
+          q('#imp-stage-name').textContent = `${selected + 1} · ${names[selected]}`;
+          q('#imp-phase').textContent = phaseNames[rows[selected].phase];
+          q('#imp-values').innerHTML = Object.entries(meta).map(([k, m]) => `<tr><td>${m[0]}</td><td>${m[1]}</td><td>${format(rows[selected][k], m[2])}</td></tr>`).join('');
+          const warning = rows[selected].warnings.join(' · ');
+          q('#imp-stage-note').textContent = (selected === 2 ? 'Lecho marino · enfriamiento impuesto hacia agua a 40 °F. ' : selected === 3 ? 'Ascenso sumergido · enfriamiento y caída de presión supuestos. ' : '') + warning;
+          q('#imp-stage-note').style.color = warning ? '#820000' : '#52675f';
+          q('#imp-prev').disabled = selected === 0; q('#imp-next').disabled = selected === 6;
+          const f = FLUIDS[q('#imp-fluid').value], gas = f.kind !== 'oil';
+          root.querySelectorAll('.oil-fill').forEach(el => el.setAttribute('fill', gas ? '#eadb9a' : '#392b40'));
+          root.querySelectorAll('.oil-stroke').forEach(el => el.setAttribute('stroke', gas ? '#d3b45a' : '#392b40'));
+          root.querySelectorAll('[data-bubble-stage]').forEach(el => { const r = rows[Number(el.dataset.bubbleStage)]; el.style.display = (!gas && r.phase === 'dosfases') ? '' : 'none'; });
+          q('#imp-tank-liquid').style.opacity = gas ? '0' : '.95';
+          draw(); drawPhase();
+        }
+        function pick(i) { selected = Math.max(0, Math.min(6, i)); if (valid) render(); }
+        function stop() { cancelAnimationFrame(timer); timer = null; q('#imp-play').textContent = 'Reproducir'; const marker = q('#imp-pt-traveler'); if (marker) marker.style.display = 'none'; if (activeView === 'phase') phaseSummary(); }
+        q('#imp-stages').innerHTML = names.map((n, i) => `<button type="button" class="cursor-interaction" data-index="${i}" aria-pressed="${i === 0}">${i + 1} · ${n}</button>`).join('');
+        root.querySelectorAll('[data-index]').forEach(b => b.onclick = () => { stop(); pick(Number(b.dataset.index)); });
+        root.querySelectorAll('.stage').forEach(g => g.onclick = () => { stop(); pick(Number(g.dataset.stage)); });
+        q('#imp-prev').onclick = () => { stop(); pick(selected - 1); }; q('#imp-next').onclick = () => { stop(); pick(selected + 1); }; q('#imp-property').onchange = draw;
+        root.querySelectorAll('.controls input:not([readonly])').forEach(e => e.addEventListener('input', () => { stop(); if (data()) render(); }));
+        q('#imp-fluid').onchange = () => { stop(); const f = FLUIDS[q('#imp-fluid').value]; q('#imp-pr').value = f.Pres.def; q('#imp-tr').value = f.Tres.def; q('#imp-p1').value = Math.round(f.Pres.def * .16); q('#imp-p2').value = Math.round(f.Pres.def * .16 * .28); q('#imp-t1').value = 95; q('#imp-t2').value = 82; selected = 0; if (data()) render(); };
+        q('#imp-play').onclick = startPlayback;
+        root.querySelectorAll('[data-view]').forEach(b => b.onclick = () => setView(b.dataset.view));
+        q('#imp-fluid').onchange(); new ResizeObserver(redraw).observe(q('.results'));
+
+      })();</script>
+  </div>
+</body>
+
+</html>
